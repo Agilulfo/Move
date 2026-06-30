@@ -55,21 +55,6 @@ def extract_first_timestamp(gpx_path: Path) -> str:
                         return val
 
     # [1] only look into tkrpt and rtept do not look elsewhere
-    # 3. Search for first wpt time
-    for elem in root.iter():
-        if local_name(elem) == 'wpt':
-            for child in elem:
-                if local_name(child) == 'time' and child.text:
-                    val = child.text.strip()
-                    if val:
-                        return val
-
-    # 4. Search for any time element
-    for elem in root.iter():
-        if local_name(elem) == 'time' and elem.text:
-            val = elem.text.strip()
-            if val:
-                return val
 
    #  [2] use custom exception here and add the filename
    # [3] does it make sense to log in here?

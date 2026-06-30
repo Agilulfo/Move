@@ -77,20 +77,6 @@ def test_import_single_valid_file(tmp_path):
     assert "Morning Run" in expected_dest.read_text()
 
 
-def test_import_single_valid_wpt_file(tmp_path):
-    source_file = tmp_path / "waypoint.gpx"
-    source_file.write_text(WPT_GPX_TEMPLATE.format(timestamp="2025-05-12T08:00:00Z"))
-    
-    storage_dir = tmp_path / "storage"
-    storage_dir.mkdir()
-    
-    result = import_gpx(str(source_file), str(storage_dir))
-    
-    expected_dest = storage_dir / "2025" / "05" / "waypoint.gpx"
-    assert len(result["imported"]) == 1
-    assert result["imported"][0] == str(expected_dest)
-    assert expected_dest.exists()
-
 
 def test_import_directory_with_mixed_files(tmp_path):
     source_dir = tmp_path / "source"
