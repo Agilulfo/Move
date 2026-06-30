@@ -20,13 +20,16 @@ class InvalidTimestampError(ValueError):
     def __init__(self, message: str, raw_value: str):
         super().__init__(f"{message}: '{raw_value}'")
         self.raw_value = raw_value
+
+
+class GPXTimestampNotFoundError(ValueError):
+    """Exception raised when no timestamp is found in a GPX file."""
+    def __init__(self, filepath: Path):
+        super().__init__(f"No timestamp could be located in: {filepath}")
+        self.filepath = filepath
     
 def extract_first_timestamp(gpx_path: Path) -> str:
-    """Extracts the first timestamp found in a GPX file.
-    
-    Looks in trkpt elements first, then rtept, wpt, and fallback to any time elements.
-    Raises ValueError if file is corrupted or no timestamp is found.
-    """
+    """Extracts the first timestamp found in a GPX file."""
     try:
         tree = ET.parse(gpx_path)
         root = tree.getroot()
@@ -36,29 +39,15 @@ def extract_first_timestamp(gpx_path: Path) -> str:
     def local_name(elem) -> str:
         return elem.tag.split('}')[-1]
 
-    # 1. Search for first trkpt time
     for elem in root.iter():
-        if local_name(elem) == 'trkpt':
+        if local_name(elem) in ['trkpt', 'rtept']:
             for child in elem:
                 if local_name(child) == 'time' and child.text:
                     val = child.text.strip()
                     if val:
                         return val
 
-    # 2. Search for first rtept time
-    for elem in root.iter():
-        if local_name(elem) == 'rtept':
-            for child in elem:
-                if local_name(child) == 'time' and child.text:
-                    val = child.text.strip()
-                    if val:
-                        return val
-
-    # [1] only look into tkrpt and rtept do not look elsewhere
-
-   #  [2] use custom exception here and add the filename
-   # [3] does it make sense to log in here?
-    raise ValueError("No timestamp found")
+    raise GPXTimestampNotFoundError(gpx_path)
 
 
 def parse_year_month(time_str: str) -> tuple[str, str]:
@@ -170,6 +159,10 @@ def import_gpx(source: str, storage: str) -> ImportResult:
         try:
             timestamp = extract_first_timestamp(file_path)
             year, month = parse_year_month(timestamp)
+        except GPXTimestampNotFoundError as e:
+            logger.warning("Failed to parse timestamp in '%s': %s", src_str, e)
+            result["errors"][src_str] = "No timestamp found"
+            continue
         except ValueError as e:
             logger.warning("Failed to parse timestamp in '%s': %s", src_str, e)
             result["errors"][src_str] = str(e)
