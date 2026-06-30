@@ -1,0 +1,5 @@
+-r requirements.txt
+
+# Development and testing tools
+pytest>=8.0.0
+pytest-cov>=4.1.0
