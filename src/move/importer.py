@@ -17,8 +17,8 @@ class ImportResult(TypedDict):
 
 class InvalidTimestampError(ValueError):
     """Exception raised when a GPX timestamp is invalid."""
-    def __init__(self, message: str, raw_value: str):
-        super().__init__(f"{message}: '{raw_value}'")
+    def __init__(self, raw_value: str):
+        super().__init__(f"The timestamp found is not supported: '{raw_value}'")
         self.raw_value = raw_value
 
 
@@ -66,7 +66,7 @@ def parse_year_month(time_str: str) -> tuple[str, str]:
         dt = datetime.fromisoformat(t_str)
         return f"{dt.year:04d}", f"{dt.month:02d}"
     except ValueError as e:
-        raise InvalidTimestampError("Invalid timestamp format", time_str) from e
+        raise InvalidTimestampError(time_str) from e
 
 
 def get_unique_path(target_dir: Path, filename: str) -> Path:
