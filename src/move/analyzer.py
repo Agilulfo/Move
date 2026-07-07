@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 DISTANCE_TRESHOLD = 100  # meters
-DURATION_TRESHOLD = 60 * 5  # seconds
+DURATION_TRESHOLD = 60 * 7  # seconds
 
 
 class Point:
