@@ -105,7 +105,7 @@ class Stay:
         return self.over
 
     def __str__(self):
-        return f"Stay: {self.lat}, {self.lon}, {self.duration}"
+        return f"Stay: {osm_url(self.lat, self.lon)}, {self.duration}"
 
 class Move:
     def __init__(self, path):
@@ -158,8 +158,13 @@ class Move:
     def __str__(self):
         start = self.track[0]
         end = self.track[-1]
-        return f"Move from: {start.lat}, {start.lon} to {end.lat}, {end.lon} during {abs(start.timestamp - end.timestamp)}"
+        return f"Move from: {osm_url(start.lat, start.lon)} to {osm_url(end.lat, end.lon)} during {abs(start.timestamp - end.timestamp)}"
 
+
+def osm_url(lat, lon):
+    url = f"https://www.openstreetmap.org/?mlat={lat:.6f}&mlon={lon:.6f}#map=16/{lat:.6f}/{lon:.6f}"
+    display_text = f"{lat:.6f}, {lon:.6f}"
+    return f"\x1b]8;;{url}\x1b\\{display_text}\x1b]8;;\x1b\\"
 
 
 def analize_gpx_file(path):
