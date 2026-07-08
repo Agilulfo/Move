@@ -106,7 +106,12 @@ class Stay:
         return self.over
 
     def __str__(self):
-        return f"Stay: {coordinate_url(self.lat, self.lon)}, {self.duration}"
+        return (
+            f"Stay - "
+            f"at: {coordinate_url(self.lat, self.lon)}, "
+            f"for: {self.duration} "
+            f"({len(self.location.points)} points)"
+        )
 
 
 class Move:
@@ -160,7 +165,13 @@ class Move:
     def __str__(self):
         start = self.track[0]
         end = self.track[-1]
-        return f"Move from: {coordinate_url(start.lat, start.lon)} to {coordinate_url(end.lat, end.lon)} during {abs(start.timestamp - end.timestamp)}"
+        return (
+            f"Move - "
+            f"from: {coordinate_url(start.lat, start.lon)}, "
+            f"to: {coordinate_url(end.lat, end.lon)}, "
+            f"during: {abs(start.timestamp - end.timestamp)} "
+            f"({len(self.track)} points)."
+        )
 
 
 def analize_gpx_file(path):
