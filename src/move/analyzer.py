@@ -9,131 +9,102 @@ DURATION_TRESHOLD = 60 * 7  # seconds
 
 
 class Stay:
-    def __init__(self, path):
-        self.path = path
-        self.location = None
-        self.over = False
+    def __init__(self, point):
+        self.start = point
+        self.location = MeanPoint()
+        self.location.add_point(point)
+        logger.debug(f"New stay at: {point}")
 
     def extend(self, point):
-        if not self.location:
-            self.location = MeanPoint()
-            self.location.add_point(point)
-            return
-        else:
-            distance = point.distance(self.location)
-            if distance > DISTANCE_TRESHOLD:
-                logger.info("we are starting moving")
-                self.next = Move(self.path)
-                self.next.extend(point)
-                self.over = True
-            else:
-                self.location.add_point(point)
-
-    def get_next(self):
-        assert self.over
-        return self.next
-
-    def force_end(self):
-        self.over = True
-
-    @property
-    def lat(self):
-        return self.location.lat
-
-    @property
-    def lon(self):
-        return self.location.lon
-
-    @property
-    def duration(self):
-        start = self.location.points[0].timestamp
-        end = self.location.points[-1].timestamp
-        return end - start
-
-    @property
-    def points(self):
-        return self.location.points
-
-    def is_over(self):
-        return self.over
+        self.end = point
+        self.location.add_point(point)
 
     def __str__(self):
         return (
             f"Stay - "
-            f"at: {coordinate_url(self.lat, self.lon)}, "
-            f"for: {self.duration} "
-            f"({len(self.location.points)} points)"
+            f"at: {coordinate_url(self.location.lat, self.location.lon)}, "
+            f"duration: {abs(self.start.timestamp - self.end.timestamp)} "
+            f"({self.datapoint_count()}) points)."
         )
+
+    def datapoint_count(self):
+        return self.end.id - self.start.id + 1
+
+    def duration(self):
+        return (self.end.timestamp - self.start.timestamp).total_seconds()
 
 
 class Move:
-    def __init__(self, path):
-        self.path = path
-        self.track = []
-        self.pause = None
-        self.over = False
+    def __init__(self, start_point):
+        self.start = start_point
+        logger.debug(f"New move at: {start_point}")
 
     def extend(self, point):
-        if self.track:
-            if self.pause:
-                self.pause.extend(point)
-                if self.pause.over:
-                    # it was a short break and now we continue to move
-                    logging.info("this is not a stay.. we are keeping moving")
-                    for p in self.pause.points:
-                        self.track.append(p)
-                    self.pause = None
-                    self.track.append(point)
-                    return
-                if self.pause.duration.seconds >= DURATION_TRESHOLD:
-                    logging.info("We have got a new stay")
-                    # it's a long pause we can consider this movement completed
-                    self.over = True
-            else:
-                distance = self.track[-1].distance(point)
-                if distance <= DISTANCE_TRESHOLD:
-                    logging.info("We might have a stay..")
-                    # the movement was small we might have a stay.
-                    self.pause = Stay(self.path)
-                    self.pause.extend(self.track[-1])
-                    self.pause.extend(point)
-                    del self.track[-1]
-                else:
-                    # we are keeping moving
-                    self.track.append(point)
-        else:
-            self.track.append(point)
-
-    def is_over(self):
-        return self.over
-
-    def get_next(self):
-        assert self.over
-        return self.pause
-
-    def force_end(self):
-        self.over = True
+        self.end = point
 
     def __str__(self):
-        start = self.track[0]
-        end = self.track[-1]
         return (
             f"Move - "
-            f"from: {coordinate_url(start.lat, start.lon)}, "
-            f"to: {coordinate_url(end.lat, end.lon)}, "
-            f"during: {abs(start.timestamp - end.timestamp)} "
-            f"({len(self.track)} points)."
+            f"from: {coordinate_url(self.start.lat, self.start.lon)}, "
+            f"to: {coordinate_url(self.end.lat, self.end.lon)}, "
+            f"duration: {abs(self.start.timestamp - self.end.timestamp)} "
+            f"({self.datapoint_count()}) points)."
         )
+
+    def datapoint_count(self):
+        return self.end.id - self.start.id + 1
 
 
 def analize_gpx_file(path):
     timeline = []
-    current_entity = Stay(path)
-    for point in PointStreamer(path):
-        current_entity.extend(point)
-        if current_entity.is_over():
-            timeline.append(current_entity)
-            current_entity = current_entity.get_next()
-    current_entity.force_end()
-    timeline.append(current_entity)
+
+    last_datapoint = None
+
+    current_move = None
+    current_stay = None
+
+    for current_datapoint in PointStreamer(path):
+        if not last_datapoint:
+            last_datapoint = current_datapoint
+            continue
+
+        distance = (
+            current_stay.location.distance(current_datapoint)
+            if current_stay
+            else last_datapoint.distance(current_datapoint)
+        )
+
+        if distance > DISTANCE_TRESHOLD:
+            # continue or start a move
+            current_move = current_move or Move(last_datapoint)
+            current_move.extend(current_datapoint)
+
+            # terminate any stay
+            if current_stay:
+                if current_stay.duration() > DURATION_TRESHOLD:
+                    logger.debug(f"completed {current_stay}")
+                    timeline.append(current_stay)
+                else:
+                    logger.debug(f"killed {current_stay}")
+                current_stay = None
+        else:
+            # continue or start a stay
+            current_stay = current_stay or Stay(last_datapoint)
+            current_stay.extend(current_datapoint)
+
+            # if the stay is long enough, terminate any move.
+            if current_move and current_stay.duration() > DURATION_TRESHOLD:
+                timeline.append(current_move)
+                logger.debug(f"compelted {current_move}")
+                logger.debug(f"official {current_stay}")
+                current_move = None
+
+        last_datapoint = current_datapoint
+
+    # TODO: check corner cases here
+    if current_stay and current_stay.duration() > DURATION_TRESHOLD:
+        timeline.append(current_stay)
+        return timeline
+
+    timeline.append(current_move)
     return timeline
