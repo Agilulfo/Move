@@ -1,5 +1,6 @@
 from gpx import read_gpx
 from geopy.distance import geodesic
+from move.utils import coordinate_url
 import logging
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ class Stay:
         start = self.location.points[0].timestamp
         end = self.location.points[-1].timestamp
         return end - start
-    
+
     @property
     def points(self):
         return self.location.points
@@ -105,7 +106,8 @@ class Stay:
         return self.over
 
     def __str__(self):
-        return f"Stay: {osm_url(self.lat, self.lon)}, {self.duration}"
+        return f"Stay: {coordinate_url(self.lat, self.lon)}, {self.duration}"
+
 
 class Move:
     def __init__(self, path):
@@ -158,13 +160,7 @@ class Move:
     def __str__(self):
         start = self.track[0]
         end = self.track[-1]
-        return f"Move from: {osm_url(start.lat, start.lon)} to {osm_url(end.lat, end.lon)} during {abs(start.timestamp - end.timestamp)}"
-
-
-def osm_url(lat, lon):
-    url = f"https://www.openstreetmap.org/?mlat={lat:.6f}&mlon={lon:.6f}#map=16/{lat:.6f}/{lon:.6f}"
-    display_text = f"{lat:.6f}, {lon:.6f}"
-    return f"\x1b]8;;{url}\x1b\\{display_text}\x1b]8;;\x1b\\"
+        return f"Move from: {coordinate_url(start.lat, start.lon)} to {coordinate_url(end.lat, end.lon)} during {abs(start.timestamp - end.timestamp)}"
 
 
 def analize_gpx_file(path):
