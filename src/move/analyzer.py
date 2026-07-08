@@ -9,17 +9,6 @@ DISTANCE_TRESHOLD = 100  # meters
 DURATION_TRESHOLD = 60 * 7  # seconds
 
 
-class Point:
-    def __init__(self, id, lat, lon, timestamp):
-        self.id = id
-        self.lat = lat
-        self.lon = lon
-        self.timestamp = timestamp
-
-    def distance(self, other):
-        return geodesic((self.lat, self.lon), (other.lat, other.lon)).meters
-
-
 class PointStreamer:
     def __init__(self, file_path):
         self.index = 0
@@ -36,7 +25,24 @@ class PointStreamer:
         return point
 
 
-class MeanPoint:
+class Coordinate:
+    """
+    Base class that provide utils for classes that contain coordinates.
+    """
+
+    def distance(self, other):
+        return geodesic((self.lat, self.lon), (other.lat, other.lon)).meters
+
+
+class Point(Coordinate):
+    def __init__(self, id, lat, lon, timestamp):
+        self.id = id
+        self.lat = lat
+        self.lon = lon
+        self.timestamp = timestamp
+
+
+class MeanPoint(Coordinate):
     def __init__(self):
         self.cumulative_lat = 0
         self.cumulative_lon = 0
