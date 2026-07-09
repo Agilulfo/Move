@@ -23,12 +23,9 @@ class Stay:
         return (
             f"Stay - "
             f"at: {coordinate_url(self.location.lat, self.location.lon)}, "
-            f"duration: {abs(self.start.timestamp - self.end.timestamp)} "
-            f"({self.datapoint_count()}) points)."
+            f"duration: {abs(self.start.timestamp - self.end.timestamp)}."
         )
 
-    def datapoint_count(self):
-        return self.end.id - self.start.id + 1
 
     def duration(self):
         return (self.end.timestamp - self.start.timestamp).total_seconds()
@@ -47,12 +44,9 @@ class Move:
             f"Move - "
             f"from: {coordinate_url(self.start.lat, self.start.lon)}, "
             f"to: {coordinate_url(self.end.lat, self.end.lon)}, "
-            f"duration: {abs(self.start.timestamp - self.end.timestamp)} "
-            f"({self.datapoint_count()}) points)."
+            f"duration: {abs(self.start.timestamp - self.end.timestamp)}."
         )
 
-    def datapoint_count(self):
-        return self.end.id - self.start.id + 1
 
 
 def analize_gpx_file(path):

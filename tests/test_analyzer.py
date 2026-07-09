@@ -7,7 +7,7 @@ def test_analize_produce_sequential_items():
     prev_item = items[0]
 
     for item in items[1:]:
-        assert item.start.id == prev_item.end.id
+        assert item.start.address == prev_item.end.address
         prev_item = item
 
 
