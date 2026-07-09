@@ -51,7 +51,7 @@ class Point(Coordinate):
         )
 
 
-class MeanPoint(Coordinate):
+class AveragePoint(Coordinate):
     def __init__(self):
         self.cumulative_lat = 0
         self.cumulative_lon = 0

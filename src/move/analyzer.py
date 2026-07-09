@@ -1,5 +1,5 @@
 from move.utils import coordinate_url
-from move.gpx import PointStreamer, MeanPoint
+from move.gpx import PointStreamer, AveragePoint
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ DURATION_TRESHOLD = 60 * 7  # seconds
 class Stay:
     def __init__(self, point):
         self.start = point
-        self.location = MeanPoint()
+        self.location = AveragePoint()
         self.location.add_point(point)
         logger.debug(f"New stay at: {point}")
 
